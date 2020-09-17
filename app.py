@@ -1,5 +1,5 @@
 from flask import Flask, request
-from flask_restful import Resource, Api
+from flask_restful import Resource, Api, reqparse
 from flask_jwt import JWT, jwt_required
 
 from app_code.security import authenticate, identity
@@ -31,6 +31,33 @@ class Item(Resource):
         items.append(item)
         return item, 201
 
+    def delete(self,name):
+        global items
+        items = list(filter(lambda item: item['name'] != name, items))
+        return {'message': "Item deleted succesfully"}
+
+    def put(self,name):
+        data = request.get_json()
+
+        parser = reqparse.RequestParser()
+
+        parser.add_argument('price',
+                            type=float,
+                            required=True,
+                            help="This field can't be left blank!"
+                            )
+
+        data = parser.parse_args()
+
+        item = next(filter(lambda item: item['name'] == name, items), None)
+
+        if item is None:
+            item = {'name': name, 'price': data['price']}
+            items.append(item)
+        else:
+            item.update(data)
+        return item
+
 
 class ItemList(Resource):
     def get(self):
@@ -40,4 +67,4 @@ class ItemList(Resource):
 api.add_resource(Item, '/item/<string:name>')
 api.add_resource(ItemList, '/items')
 
-app.run(port=5000, debug=True)
+app.run(port=4000, debug=True)
